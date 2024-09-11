@@ -40,6 +40,7 @@ jobs:
                     region: us-cal-1
           "@
           Add-Content -Path $configFile -Value $tunnelConfig
+          Get-Content -Path $configFile
           
       - name: Start an ngrok tunnel for port 3389
         run: .\ngrok\ngrok.exe start my-tunnel
