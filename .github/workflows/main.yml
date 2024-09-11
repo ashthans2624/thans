@@ -13,33 +13,26 @@ jobs:
 
       - name: Enable TS
         run: |
-          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server"-name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -Name "RemoteDesktop-UserMode-In-TCP"
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
 
-      - name: Change the default Python version in GitHub-hosted runners
+      - name: Download and Extract ngrok for creating secure tunnels
         run: |
-          # Rename the key 3.12 to 3.12_Original
-          Rename-Item -Path "HKLM:\SOFTWARE\Python\PythonCore\3.12" -NewName "3.12_Original"
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
+          Expand-Archive -Path ".\ngrok.zip"
+          Remove-Item -Path ".\ngrok.zip"
 
-          # Rename the key 3.11 to 3.12
-          Rename-Item -Path "HKLM:\SOFTWARE\Python\PythonCore\3.11" -NewName "3.12"
-
-          # Rename the key 3.12_Original to 3.11
-          Rename-Item -Path "HKLM:\SOFTWARE\Python\PythonCore\3.12_Original" -NewName "3.11"
-
-      - name: Install ngrok using Chocolatey
-        run: choco install ngrok -y
-        
       - name: Authenticate with ngrok using the provided token
-        run: ngrok authtoken $Env:NGROK_AUTH_TOKEN
+        run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
           
+        
       - name: Setup ngrok region
         run: |
           Add-Content -Path "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml" -Value "region: us-cal-1"
           
       - name: Start an ngrok tunnel for port 3389
-        run: ngrok tcp 3389
+        run: .\ngrok\ngrok.exe tcp 3389
