@@ -20,7 +20,7 @@ jobs:
       
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
-          Invoke-WebRequest -Uri "https://bin.equinox.io/a/c4Cafbnz7jm/ngrok-v3-3.14.1-windows-amd64.zip" -OutFile ".\ngrok.zip"
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
           Expand-Archive -Path ".\ngrok.zip"
           Remove-Item -Path ".\ngrok.zip"
 
@@ -28,10 +28,18 @@ jobs:
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
- 
+        
       - name: Setup ngrok region
         run: |
-          Add-Content -Path "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml" -Value "region: us-cal-1"
+          $configFile = "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml"
+          $tunnelConfig = @"
+              tunnels:
+                my-tunnel:
+                  proto: tcp
+                  addr: 3389
+                  region: us-cal-1
+          "@
+          Add-Content -Path $configFile -Value $tunnelConfig
           
       - name: Start an ngrok tunnel for port 3389
         run: .\ngrok\ngrok.exe tcp 3389
