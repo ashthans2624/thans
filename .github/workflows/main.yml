@@ -23,17 +23,24 @@ jobs:
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
           Expand-Archive -Path ".\ngrok.zip"
           Remove-Item -Path ".\ngrok.zip"
+          
       - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-          
-      # - name: Start an ngrok tunnel for port 3389 with specified region
-        # run: .\ngrok\ngrok.exe tcp --region=us-cal-1 3389
         
-      - name: Setup ngrok region
+      - name: Add region to ngrok.yml
         run: |
-          Add-Content -Path "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml" -Value "    region: us-cal-1"
-          Get-Content -Path "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml"
+          $configFile = "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml"
+          $tunnelConfig = @"
+          tunnels:
+            my-tunnel:
+              proto: tcp
+              addr: 3389
+              region: us-cal-1
+          "@
+          Add-Content -Path $configFile -Value $tunnelConfig
+        shell: pwsh
+        
       - name: Start an ngrok tunnel for port 3389
         run: .\ngrok\ngrok.exe tcp 3389
