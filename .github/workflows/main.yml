@@ -42,4 +42,4 @@ jobs:
           Add-Content -Path $configFile -Value $tunnelConfig
           
       - name: Start an ngrok tunnel for port 3389
-        run: .\ngrok\ngrok.exe tcp 3389
+        run: .\ngrok\ngrok.exe tcp my-tunnel
