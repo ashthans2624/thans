@@ -40,4 +40,4 @@ jobs:
           Add-Content -Path "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml" -Value "region: us-cal-1"
           
       - name: Start an ngrok tunnel for port 3389
-        run: .\ngrok\ngrok.exe tcp 3389
+        run: ngrok.exe tcp 3389
