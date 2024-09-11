@@ -34,10 +34,10 @@ jobs:
           $configFile = "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml"
           $tunnelConfig = @"
               tunnels:
-                my-tunnel:
-                  proto: tcp
-                  addr: 3389
-                  region: us-cal-1
+                  my-tunnel:
+                    proto: tcp
+                    addr: 3389
+                    region: us-cal-1
           "@
           Add-Content -Path $configFile -Value $tunnelConfig
           
