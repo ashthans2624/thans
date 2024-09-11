@@ -18,12 +18,14 @@ jobs:
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
       
-      - name: Download and Extract ngrok for creating secure tunnels
-        run: |
-          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
-          Expand-Archive -Path ".\ngrok.zip"
-          Remove-Item -Path ".\ngrok.zip"
-
+      # - name: Download and Extract ngrok for creating secure tunnels
+        # run: |
+          # Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
+          # Expand-Archive -Path ".\ngrok.zip"
+          # Remove-Item -Path ".\ngrok.zip"
+      - name: Install ngrok using Chocolatey
+        run: choco install ngrok -y
+        
       - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
