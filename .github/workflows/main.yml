@@ -29,6 +29,12 @@ jobs:
           # Thêm quy tắc tường lửa cho cổng 50000
           New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
 
+          # Kiểm tra và xóa quy tắc cũ của cổng 3389 (nếu có)
+          $oldRule = Get-NetFirewallRule | Where-Object { $_.LocalPort -eq 3389 -and $_.Protocol -eq "TCP" }
+          if ($oldRule) {
+              Remove-NetFirewallRule -DisplayName $oldRule.DisplayName
+          }
+
           # Khởi động lại dịch vụ Terminal Services
           Stop-Service TermService -Force
           Start-Service TermService
