@@ -54,6 +54,26 @@ jobs:
           del N_m3u8DL-RE.zip
           del bento4.zip
 
+          (
+          echo certifi==2024.8.30
+          echo charset-normalizer==3.4.0
+          echo colorama==0.4.6
+          echo idna==3.10
+          echo iso8601==2.1.0
+          echo m3u8==6.0.0
+          echo markdown-it-py==3.0.0
+          echo mdurl==0.1.2
+          echo pathvalidate==3.2.1
+          echo pycryptodome==3.21.0
+          echo Pygments==2.18.0
+          echo requests==2.32.3
+          echo rich==13.9.2
+          echo tqdm==4.66.5
+          echo urllib3==2.2.3
+          echo webvtt-py==0.5.1
+          ) > .\udemy-py\requirements2.txt
+          pip install -r .\udemy-py\requirements2.txt
+
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
