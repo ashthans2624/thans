@@ -59,7 +59,13 @@ jobs:
 
           # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
-
+          
+      - name: Set up environment variables for terminal
+        run: |
+          $env:PYTHONIOENCODING = "utf-8"
+          $env:COLUMNS = 80
+          $env:LINES = 24
+        
       - name: Test Download
         env:
           PYTHONIOENCODING: utf-8
