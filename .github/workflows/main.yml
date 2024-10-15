@@ -22,13 +22,6 @@ jobs:
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
           # Add firewall rule for port 50000
           New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
-          # Check and remove old rules for port 3389 (TCP and UDP)
-          $oldRules = Get-NetFirewallRule | Where-Object { $_.Name -match "RemoteDesktop-UserMode" }
-          if ($oldRules) {
-              $oldRules | ForEach-Object {
-                  Remove-NetFirewallRule -Name $_.Name
-              }
-          }
           # Restart the Terminal Services service
           Stop-Service TermService -Force
           Start-Service TermService
