@@ -64,6 +64,7 @@ jobs:
         shell: cmd
         env:
           PYTHONIOENCODING: utf-8    # Buộc Python sử dụng UTF-8
+          PYTHONUNBUFFERED: 1
           COLUMNS: 80                # Thiết lập kích thước terminal mặc định
           LINES: 24
         run: |
