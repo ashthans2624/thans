@@ -61,14 +61,13 @@ jobs:
           py -m pip install -r .\udemy-py\requirements.txt
           
       - name: Test Download
+        shell: pwsh
         env:
+          PYTHONUNBUFFERED: 1
           PYTHONIOENCODING: utf-8
           COLUMNS: 80
           LINES: 24
         run: |
-          $env:PYTHONIOENCODING = "utf-8"
-          $env:COLUMNS = 80
-          $env:LINES = 24
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
           $path += ";${{ github.workspace }}\bin\ffmpeg\bin"
           $path += ";${{ github.workspace }}\bin\N_m3u8DL-RE"
