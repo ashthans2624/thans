@@ -54,10 +54,6 @@ jobs:
           ren bin\N_m3u8DL-RE_Beta_win-x64 N_m3u8DL-RE
           ren bin\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 bento4
 
-          # Add the extracted directories to system PATH
-          setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
-          set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
-
           # Remove the downloaded zip files after extraction
           del *.zip
 
@@ -66,6 +62,10 @@ jobs:
           
       - name: Test Download
         shell: cmd
+        env:
+          PYTHONIOENCODING: utf-8    # Buộc Python sử dụng UTF-8
+          COLUMNS: 80                # Thiết lập kích thước terminal mặc định
+          LINES: 24
         run: |
           setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
