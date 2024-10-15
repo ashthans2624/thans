@@ -72,7 +72,7 @@ jobs:
           echo urllib3==2.2.3
           echo webvtt-py==0.5.1
           ) > .\udemy-py\requirements2.txt
-          pip install -r .\udemy-py\requirements2.txt
+          py -m pip install -r .\udemy-py\requirements2.txt
 
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
