@@ -11,12 +11,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Enable TS
+      - name: Enable TS and change RDP port
         shell: pwsh
         run: |
+          # Bật RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
+          
+          # Mở tường lửa cho RDP
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          
+          # Bật xác thực người dùng cho RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
+          
+          # Đổi cổng RDP sang 50000
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
+
+          # Thêm quy tắc tường lửa cho cổng 50000
+          New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
+
+          # Xóa quy tắc cũ của cổng 3389
+          & netsh advfirewall firewall delete rule name="Remote Desktop (TCP-In)" protocol=TCP localport=3389
+
+          # Khởi động lại dịch vụ Terminal Services
+          Stop-Service TermService -Force
+          Start-Service TermService
+          
+          # Đặt lại mật khẩu cho user "runneradmin"
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
   
       - name: Download and Extract ngrok for creating secure tunnels
@@ -24,15 +44,15 @@ jobs:
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
           Expand-Archive -Path ".\ngrok.zip"
           Remove-Item -Path ".\ngrok.zip"
-
+          
       - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
           
-      - name: Start an ngrok tunnel for port 3389 with specified region
-        run: .\ngrok\ngrok.exe tcp --region=us-cal-1 3389
+      - name: Start an ngrok tunnel for port 50000 with specified region
+        run: .\ngrok\ngrok.exe tcp --region=us-cal-1 50000
           
-      - name: Start an ngrok tunnel for port 3389 with specified region
+      - name: Start an ngrok tunnel for port 50000 with specified region
         shell: cmd
-        run: .\ngrok\ngrok.exe tcp --region=us-cal-1 3389
+        run: .\ngrok\ngrok.exe tcp --region=us-cal-1 50000
