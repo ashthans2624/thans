@@ -66,8 +66,8 @@ jobs:
 
       - name: Test Download
         run: |
-        Invoke-WebRequest -Uri " https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EZ8SSm7PQ0VDn8HHe825Y74BAWLoAFq6GmnvIGjip8SWQw?e=tBt0ei&download=1" -OutFile ".\udemy-py\cookies.txt"
-        py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies cookies.txt --captions en_US --srt
+          Invoke-WebRequest -Uri " https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EZ8SSm7PQ0VDn8HHe825Y74BAWLoAFq6GmnvIGjip8SWQw?e=tBt0ei&download=1" -OutFile ".\udemy-py\cookies.txt"
+          py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies cookies.txt --captions en_US --srt
 
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
