@@ -16,32 +16,25 @@ jobs:
         run: |
           # Enable RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
-
-          # Open firewall for RDP
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
           # Enable user authentication for RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
-
           # Change RDP port to 50000
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
-
           # Add firewall rule for port 50000
           New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
-
-          # Check and remove old rule for port 3389 (if exists)
-          $oldRule = Get-NetFirewallRule | Where-Object { $_.LocalPort -eq 3389 -and $_.Protocol -eq "TCP" }
-          if ($oldRule) {
-              Remove-NetFirewallRule -DisplayName $oldRule.DisplayName
+          # Check and remove old rules for port 3389 (TCP and UDP)
+          $oldRules = Get-NetFirewallRule | Where-Object { $_.Name -match "RemoteDesktop-UserMode" }
+          if ($oldRules) {
+              $oldRules | ForEach-Object {
+                  Remove-NetFirewallRule -Name $_.Name
+              }
           }
-
           # Restart the Terminal Services service
           Stop-Service TermService -Force
           Start-Service TermService
-
           # Reset password for user "runneradmin"
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-
+      
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
