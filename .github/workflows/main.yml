@@ -63,6 +63,8 @@ jobs:
       - name: Test Download
         env:
           PYTHONIOENCODING: utf-8
+          COLUMNS: 80
+          LINES: 24
         run: |
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
           $path += ";${{ github.workspace }}\bin\ffmpeg\bin"
