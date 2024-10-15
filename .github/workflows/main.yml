@@ -41,23 +41,16 @@ jobs:
           rm -rf temp2
           rm ffmpeg.zip N_m3u8DL-RE.zip bento4.zip
 
-      - name: Download and Extract ngrok
-        shell: bash
+      - name: Download and Extract ngrok for creating secure tunnels
         run: |
-          curl -L -o ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip
-          unzip -q ngrok.zip -d ngrok
-          rm ngrok.zip
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
+          Expand-Archive -Path ".\ngrok.zip"
+          Remove-Item -Path ".\ngrok.zip"
 
-      - name: Authenticate with ngrok
-        shell: bash
-        run: |
-          ngrokPath="${{ github.workspace }}/ngrok/ngrok.exe"
-          cmd.exe /C "$ngrokPath authtoken $NGROK_AUTH_TOKEN"
+      - name: Authenticate with ngrok using the provided token
+        run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Start an ngrok tunnel for port 3389
-        shell: bash
-        run: |
-          ngrokPath="${{ github.workspace }}/ngrok/ngrok.exe"
-          cmd.exe /C "$ngrokPath tcp --region=us-cal-1 3389"
+          
+      - name: Start an ngrok tunnel for port 3389 with specified region
+        run: .\ngrok\ngrok.exe tcp --region=us-cal-1 3389
