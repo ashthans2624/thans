@@ -20,26 +20,25 @@ jobs:
 
       - name: Set up Udemy Downloader
         run: |
-          cd C:\
           curl -L -o ffmpeg.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
           curl -L -o N_m3u8DL-RE.zip https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.2.1-beta/N_m3u8DL-RE_Beta_win-x64_20240828.zip
           curl -L -o bento4.zip https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip
-          mkdir temp
-          tar -xf ffmpeg.zip -C temp
-          tar -xf N_m3u8DL-RE.zip -C temp
-          tar -xf bento4.zip -C temp
-          rename temp\ffmpeg-master-latest-win64-gpl ffmpeg
-          rename temp\N_m3u8DL-RE_Beta_win-x64 N_m3u8DL-RE
-          rename temp\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 bento4
+          mkdir temp2
+          tar -xf ffmpeg.zip -C temp2
+          tar -xf N_m3u8DL-RE.zip -C temp2
+          tar -xf bento4.zip -C temp2
+          rename temp2\ffmpeg-master-latest-win64-gpl ffmpeg
+          rename temp2\N_m3u8DL-RE_Beta_win-x64 N_m3u8DL-RE
+          rename temp2\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 bento4
           mkdir bin
           echo Moving renamed directories to "bin" directory...
-          xcopy /s /e /y temp\ffmpeg bin\ffmpeg\
-          xcopy /s /e /y temp\N_m3u8DL-RE bin\N_m3u8DL-RE\
-          xcopy /s /e /y temp\bento4 bin\bento4\
+          xcopy /s /e /y temp2\ffmpeg bin\ffmpeg\
+          xcopy /s /e /y temp2\N_m3u8DL-RE bin\N_m3u8DL-RE\
+          xcopy /s /e /y temp2\bento4 bin\bento4\
           set "newPath=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin"
           setx PATH "%newPath%;%PATH%"
           set PATH=%newPath%;%PATH%
-          rmdir /s /q temp
+          rmdir /s /q temp2
           del ffmpeg.zip
           del N_m3u8DL-RE.zip
           del bento4.zip
