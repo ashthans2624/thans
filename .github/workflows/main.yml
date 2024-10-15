@@ -27,9 +27,9 @@ jobs:
           tar -xf ffmpeg.zip -C temp2
           tar -xf N_m3u8DL-RE.zip -C temp2
           tar -xf bento4.zip -C temp2
-          rename temp2\ffmpeg-master-latest-win64-gpl temp2\ffmpeg
-          rename temp2\N_m3u8DL-RE_Beta_win-x64 temp2\N_m3u8DL-RE
-          rename temp2\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 temp2\bento4
+          mv temp2\ffmpeg-master-latest-win64-gpl temp2\ffmpeg
+          mv temp2\N_m3u8DL-RE_Beta_win-x64 temp2\N_m3u8DL-RE
+          mv temp2\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 temp2\bento4
           mkdir bin
           echo Moving renamed directories to "bin" directory...
           xcopy /s /e /y temp2\ffmpeg bin\ffmpeg\
