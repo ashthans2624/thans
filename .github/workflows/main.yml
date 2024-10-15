@@ -55,7 +55,9 @@ jobs:
           ren bin\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 bento4
 
           # Add the extracted directories to system PATH
-          setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
+          setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%" /M
+
+          # Set PATH for the current session
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
 
           # Remove the downloaded zip files after extraction
