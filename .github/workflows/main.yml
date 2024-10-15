@@ -18,15 +18,52 @@ jobs:
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
           # Enable user authentication for RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
+          
           # Change RDP port to 50000
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
-          # Add firewall rule for port 50000
-          New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
+          
           # Restart the Terminal Services service
           Stop-Service TermService -Force
           Start-Service TermService
+          
+          # Add firewall rule for port 50000
+          New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
+          
+          # Find firewall rules matching "RemoteDesktop-UserMode" and disable them
+          Get-NetFirewallRule | Where-Object { $_.Name -match "RemoteDesktop-UserMode" } | Set-NetFirewallRule -Enabled False
+          
           # Reset password for user "runneradmin"
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+
+      - name: Set up Udemy Downloader
+        shell: cmd
+        run: |
+          # Clone the Udemy downloader repository
+          git clone https://github.com/swargaraj/udemy-py.git
+          
+          # Download necessary tools: ffmpeg, N_m3u8DL-RE, and Bento4
+          curl -L -o ffmpeg.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
+          curl -L -o N_m3u8DL-RE.zip https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.2.1-beta/N_m3u8DL-RE_Beta_win-x64_20240828.zip
+          curl -L -o bento4.zip https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip
+
+          # Create 'bin' directory and extract downloaded files into it
+          mkdir bin && tar -xf ffmpeg.zip -C bin && tar -xf N_m3u8DL-RE.zip -C bin && tar -xf bento4.zip -C bin
+
+          # Rename the extracted directories for easier access
+          ren bin\ffmpeg-master-latest-win64-gpl ffmpeg
+          ren bin\N_m3u8DL-RE_Beta_win-x64 N_m3u8DL-RE
+          ren bin\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 bento4
+
+          # Add the extracted directories to system PATH
+          setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
+          set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
+
+          # Remove the downloaded zip files after extraction
+          del *.zip
+
+          # Install required Python packages for Udemy downloader
+          py -m pip install -r .\udemy-py\requirements.txt
+
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
