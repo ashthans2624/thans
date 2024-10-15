@@ -29,13 +29,10 @@ jobs:
           # Add firewall rule for port 50000
           New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
 
-          # Check and remove old rules for port 3389 (TCP and UDP)
-          $oldRules = Get-NetFirewallRule | Where-Object { $_.Name -match "RemoteDesktop-UserMode" }
-
-          if ($oldRules) {
-              $oldRules | ForEach-Object {
-                  Remove-NetFirewallRule -Name $_.Name
-              }
+          # Check and remove old rule for port 3389 (if exists)
+          $oldRule = Get-NetFirewallRule | Where-Object { $_.LocalPort -eq 3389 -and $_.Protocol -eq "TCP" }
+          if ($oldRule) {
+              Remove-NetFirewallRule -DisplayName $oldRule.DisplayName
           }
 
           # Restart the Terminal Services service
@@ -57,8 +54,4 @@ jobs:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
           
       - name: Start an ngrok tunnel for port 50000
-        run: .\ngrok\ngrok.exe tcp 50000
-          
-      - name: Start an ngrok tunnel for port 50000
-        shell: cmd
         run: .\ngrok\ngrok.exe tcp 50000
