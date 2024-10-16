@@ -69,7 +69,8 @@ jobs:
                   lines = file.readlines()
                   for i, line in enumerate(lines):
                       if target_text in line:
-                          lines[i] = line[:len(line) - len(line.lstrip())] + new_content + '\n'
+                          indent = len(line) - len(line.lstrip())  # Giữ mức thụt lề hiện tại
+                          lines[i] = ' ' * indent + new_content + '\n'
                           break
                   file.seek(0)
                   file.writelines(lines)
