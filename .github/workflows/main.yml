@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,25 +61,29 @@ jobs:
           # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
 
-      - name: Preload Patch for Constants.py
+      - name: Fix constants.py to avoid Unicode and Terminal Errors
         shell: cmd
         run: |
-          echo import sys > preload_patch.py
-          echo import shutil >> preload_patch.py
-          echo import os >> preload_patch.py
-          echo sys.stdout.reconfigure(encoding='utf-8') >> preload_patch.py
-          echo os.get_terminal_size = lambda: shutil.get_terminal_size(fallback=(80, 20)) if hasattr(shutil, 'get_terminal_size') else (80, 20) >> preload_patch.py
-          py preload_patch.py
-       
+          # Create a script to patch constants.py
+          echo import shutil > fix_constants.py
+          echo with open("udemy-py/constants.py", "r", encoding="utf-8") as f: >> fix_constants.py
+          echo.    lines = f.readlines() >> fix_constants.py
+          echo with open("udemy-py/constants.py", "w", encoding="utf-8") as f: >> fix_constants.py
+          echo.    for line in lines: >> fix_constants.py
+          echo.        if "os.get_terminal_size()" in line: >> fix_constants.py
+          echo.            f.write("        cols = shutil.get_terminal_size(fallback=(80, 20)).columns\\n") >> fix_constants.py
+          echo.        else: >> fix_constants.py
+          echo.            f.write(line) >> fix_constants.py
+          py fix_constants.py
+
       - name: Test Download
         shell: cmd
         run: |
           setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
           set PATH=%PATH%
-          certutil -urlcache -split -f "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EePwwLCA-E1JjP_EyjblvB8Bz8HgW4clgrmCM_FdCkywpQ?e=hsGrSv&download=1" .\udemy-py\cookies.txt
+          certutil -urlcache -split -f "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EaU4J7D9IRVJiD7Y3Qtyxt4Bah_4pxjoshdZMRO17H0NQw?e=ThxC20&download=1" .\udemy-py\cookies.txt
           set PYTHONIOENCODING=utf-8
-          py preload_patch.py
           py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies .\udemy-py\cookies.txt --captions en_US --srt
 
       - name: Download and Extract ngrok for creating secure tunnels
