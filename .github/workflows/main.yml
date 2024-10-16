@@ -75,6 +75,8 @@ jobs:
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
           Invoke-WebRequest -Uri "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EaU4J7D9IRVJiD7Y3Qtyxt4Bah_4pxjoshdZMRO17H0NQw?e=ThxC20&download=1" -OutFile ".\udemy-py\cookies.txt"
           choco install conemu
+          choco list --local-only
+          where ConEmu64.exe
           C:\ProgramData\chocolatey\bin\ConEmu64.exe /cmd py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies .\udemy-py\cookies.txt --captions en_US --srt
 
       - name: Download and Extract ngrok for creating secure tunnels
