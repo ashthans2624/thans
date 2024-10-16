@@ -56,7 +56,7 @@ jobs:
           Add-Content -Path "fix_constants.py" -Value "    with open(file_path, 'w', encoding='utf-8') as file:"
           Add-Content -Path "fix_constants.py" -Value "        file.writelines(new_lines)"
           Add-Content -Path "fix_constants.py" -Value ""
-          Add-Content -Path "fix_constants.py" -Value "constants_file_path = '.\\udemy-py\\constants.py'"
+          Add-Content -Path "fix_constants.py" -Value "constants_file_path = '.\udemy-py\constants.py'"
           Add-Content -Path "fix_constants.py" -Value "fix_constants_file(constants_file_path)"
 
 
