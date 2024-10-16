@@ -68,8 +68,8 @@ jobs:
       - name: Test Download
         shell: cmd
         run: |
-          setx PATH "%CD%\\bin\\ffmpeg\\bin;%CD%\\bin\\N_m3u8DL-RE;%CD%\\bin\\bento4\\bin;%PATH%"
-          set PATH=%CD%\\bin\\ffmpeg\\bin;%CD%\\bin\\N_m3u8DL-RE;%CD%\\bin\\bento4\\bin;%PATH%
+          setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
+          set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
           set PATH=%PATH%
           certutil -urlcache -split -f "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EePwwLCA-E1JjP_EyjblvB8Bz8HgW4clgrmCM_FdCkywpQ?e=hsGrSv&download=1" .\\udemy-py\\cookies.txt
           set PYTHONIOENCODING=utf-8
