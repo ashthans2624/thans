@@ -60,41 +60,19 @@ jobs:
           # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
 
-      - name: Create fix_constants.py to patch the constants.py file
+      - name: Modify constants.py in-place
         shell: pwsh
         run: |
-          $script = @"
-          def fix_indentation_and_replace(file_path, search_pattern, new_content):
-              with open(file_path, 'r+', encoding='utf-8') as file:
-                  lines = file.readlines()
+          $filePath = "./udemy-py/constants.py"
+          $lineNumber = 90
+          $newContent = "        import shutil`n        cols = shutil.get_terminal_size(fallback=(80, 20)).columns"
 
-                  # Ensure all lines use 4 spaces for indentation and no tabs
-                  lines = [line.replace('\t', '    ') for line in lines]
+          $lines = Get-Content $filePath
+          if ($lines.Count -ge $lineNumber) {
+              $lines[$lineNumber - 1] = $newContent
+              Set-Content -Path $filePath -Value $lines
+          }
 
-                  # Search for the pattern and replace it while preserving indentation
-                  for i, line in enumerate(lines):
-                      if search_pattern in line:
-                          # Capture the current indentation
-                          indentation = line[:len(line) - len(line.lstrip())]
-                          # Replace the line with the new content, maintaining the same indentation
-                          lines[i] = f"{indentation}{new_content}\n"
-                          break
-
-                  # Rewind to the start and write the updated content
-                  file.seek(0)
-                  file.writelines(lines)
-                  file.truncate()  # In case the new file content is shorter than the original
-
-          # Example usage:
-          fix_indentation_and_replace('./udemy-py/constants.py', 'cols = os.get_terminal_size().columns',
-                                      'import shutil\ncols = shutil.get_terminal_size(fallback=(80, 20)).columns')
-          "@
-          $script | Out-File -FilePath ".\udemy-py\fix_constants.py"
-
-      - name: Run fix_constants.py to patch constants.py
-        shell: cmd
-        run: py .\udemy-py\fix_constants.py
-        
       - name: Test Download
         shell: cmd
         run: |
