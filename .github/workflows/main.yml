@@ -68,6 +68,8 @@ jobs:
       - name: Test Download
         run: |
           $Env:PYTHONIOENCODING = "utf-8"
+          $Env:COLUMNS = 80
+          $Env:LINES = 24
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
           $path += ";${{ github.workspace }}\bin\ffmpeg\bin"
           $path += ";${{ github.workspace }}\bin\N_m3u8DL-RE"
