@@ -66,10 +66,10 @@ jobs:
           echo import sys > preload_patch.py
           echo import shutil >> preload_patch.py
           echo import os >> preload_patch.py
-          echo sys.stdout.reconfigure\(encoding=\'utf-8\'\) >> preload_patch.py
-          echo os.get_terminal_size = lambda: shutil.get_terminal_size\(fallback=\(80, 20\)\) >> preload_patch.py
+          echo sys.stdout.reconfigure(encoding='utf-8') >> preload_patch.py
+          echo os.get_terminal_size = lambda: shutil.get_terminal_size(fallback=(80, 20)) >> preload_patch.py
           py preload_patch.py
-          
+         
       - name: Test Download
         shell: cmd
         run: |
