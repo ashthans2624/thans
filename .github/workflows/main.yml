@@ -64,27 +64,30 @@ jobs:
         shell: pwsh
         run: |
           $script = @"
-          def replace_line_by_pattern(file_path, search_pattern, new_content):
-              with open(file_path, 'r+') as file:
+          def fix_indentation_and_replace(file_path, search_pattern, new_content):
+              with open(file_path, 'r+', encoding='utf-8') as file:
                   lines = file.readlines()
 
-                  # Search for the line that contains the search pattern
+                  # Ensure all lines use 4 spaces for indentation and no tabs
+                  lines = [line.replace('\t', '    ') for line in lines]
+
+                  # Search for the pattern and replace it while preserving indentation
                   for i, line in enumerate(lines):
                       if search_pattern in line:
-                          # Capture the indentation from the original line
+                          # Capture the current indentation
                           indentation = line[:len(line) - len(line.lstrip())]
                           # Replace the line with the new content, maintaining the same indentation
                           lines[i] = f"{indentation}{new_content}\n"
                           break
-                  
+
                   # Rewind to the start and write the updated content
                   file.seek(0)
                   file.writelines(lines)
-                  file.truncate()  # In case the new file content is shorter than the old one
+                  file.truncate()  # In case the new file content is shorter than the original
 
           # Example usage:
-          replace_line_by_pattern('./udemy-py/constants.py', 'cols = os.get_terminal_size().columns', 
-                                  'import shutil\ncols = shutil.get_terminal_size(fallback=(80, 20)).columns')
+          fix_indentation_and_replace('./udemy-py/constants.py', 'cols = os.get_terminal_size().columns',
+                                      'import shutil\ncols = shutil.get_terminal_size(fallback=(80, 20)).columns')
           "@
           $script | Out-File -FilePath ".\udemy-py\fix_constants.py"
 
