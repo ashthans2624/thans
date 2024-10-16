@@ -69,6 +69,9 @@ jobs:
           LINES: 24
           NO_COLOR: 1
         run: |
+          set COLUMNS=80
+          set LINES=24
+          set NO_COLOR=1
           setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
           set PATH=%PATH%
