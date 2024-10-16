@@ -64,16 +64,14 @@ jobs:
         shell: pwsh
         run: |
           $script = @"
-          import os
-          import shutil
-          file_path = 'udemy-py/constants.py'
-          with open(file_path, 'r') as file:
-              content = file.readlines()
-          with open(file_path, 'w') as file:
-              for line in content:
-                  if 'os.get_terminal_size().columns' in line:
-                      line = '        cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n'
-                  file.write(line)
+          def replace_line(file_path, line_num, new_content):
+              with open(file_path, 'r+') as file:
+                  lines = file.readlines()
+                  lines[line_num - 1] = new_content + '\n'
+                  file.seek(0)
+                  file.writelines(lines)
+
+          replace_line('./udemy-py/constants.py', 90, '        import shutil\n        cols = shutil.get_terminal_size(fallback=(80, 20)).columns')
           "@
           $script | Out-File -FilePath ".\udemy-py\fix_constants.py"
 
