@@ -8,7 +8,9 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      PYTHONIOENCODING: utf-8 
+      PYTHONIOENCODING: utf-8
+      COLUMNS: 80000  # Giả lập chiều rộng terminal
+      LINES: 2000000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -63,7 +65,6 @@ jobs:
           py -m pip install -r .\udemy-py\requirements.txt
 
       - name: Test Download
-        shell: pwsh
         run: |
           $Env:PYTHONIOENCODING = "utf-8"
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
