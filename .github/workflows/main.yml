@@ -8,8 +8,8 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      COLUMNS: 80  # Giả lập kích thước terminal
-      LINES: 24    # Thiết lập số dòng terminal (nếu cần)
+      PYTHONIOENCODING: utf-8
+      PYTHONUNBUFFERED: 1  
       
     steps:
       - name: Checkout code
