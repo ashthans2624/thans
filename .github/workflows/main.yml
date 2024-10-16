@@ -64,6 +64,9 @@ jobs:
           py -m pip install -r .\udemy-py\requirements.txt
           
       - name: Test Download
+        env:
+          COLUMNS: 1200000
+          LINES: 40000000
         shell: cmd
         run: |
           setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
