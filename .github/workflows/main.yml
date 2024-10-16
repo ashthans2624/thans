@@ -7,11 +7,10 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Enable RDP and change RDP port
         shell: pwsh
         run: |
@@ -35,6 +34,29 @@ jobs:
           
           # Reset password for user "runneradmin"
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+
+      - name: Create fix_constants.py script
+        run: |
+          echo import shutil > fix_constants.py
+          echo import os >> fix_constants.py
+          echo def fix_constants_file(file_path): >> fix_constants.py
+          echo ^    with open(file_path, 'r', encoding='utf-8') as file: >> fix_constants.py
+          echo ^        lines = file.readlines() >> fix_constants.py
+          echo ^    new_lines = [] >> fix_constants.py
+          echo ^    for line in lines: >> fix_constants.py
+          echo ^        if "os.get_terminal_size()" in line: >> fix_constants.py
+          echo ^            new_line = line.replace("os.get_terminal_size()", "shutil.get_terminal_size(fallback=(80, 20))") >> fix_constants.py
+          echo ^            new_lines.append(new_line) >> fix_constants.py
+          echo ^        else: >> fix_constants.py
+          echo ^            new_lines.append(line) >> fix_constants.py
+          echo ^    with open(file_path, 'w', encoding='utf-8') as file: >> fix_constants.py
+          echo ^        file.writelines(new_lines) >> fix_constants.py
+          echo constants_file_path = '.\\udemy-py\\constants.py' >> fix_constants.py
+          echo fix_constants_file(constants_file_path) >> fix_constants.py
+
+      - name: Run fix_constants.py
+        shell: cmd
+        run: py fix_constants.py
 
       - name: Set up udemy-py
         shell: cmd
@@ -61,23 +83,6 @@ jobs:
           # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
 
-      - name: Patch constants.py to fix errors
-        shell: cmd
-        run: |
-          echo """with open('udemy-py/constants.py', 'r', encoding='utf-8') as f:
-    lines = f.readlines()
-with open('udemy-py/constants.py', 'w', encoding='utf-8') as f:
-    import_found = False
-    for line in lines:
-        if 'import shutil' in line:
-            import_found = True
-        f.write(line.rstrip() + '\n')
-    if not import_found:
-        f.write('import shutil\n')
-    f.write('\n    cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n')
-    f.write('    print(\\r' + ' ' * cols, end='', flush=True)\n')""" > fix_constants.py
-          py fix_constants.py
-
       - name: Test Download
         shell: cmd
         run: |
@@ -93,11 +98,11 @@ with open('udemy-py/constants.py', 'w', encoding='utf-8') as f:
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
           Expand-Archive -Path ".\ngrok.zip"
           Remove-Item -Path ".\ngrok.zip"
-          
+
       - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-          
+
       - name: Start an ngrok tunnel for port 50000 with specified region
         run: .\ngrok\ngrok.exe tcp --region=us-cal-1 50000
