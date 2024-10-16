@@ -64,21 +64,19 @@ jobs:
       - name: Patch constants.py to fix errors
         shell: cmd
         run: |
-          # Tạo script sửa lỗi cho constants.py
-          echo with open("udemy-py/constants.py", "r", encoding="utf-8") as f: > fix_constants.py
-          echo.    lines = f.readlines() >> fix_constants.py
-          echo with open("udemy-py/constants.py", "w", encoding="utf-8") as f: >> fix_constants.py
-          echo.    import_found = False >> fix_constants.py
-          echo.    for line in lines: >> fix_constants.py
-          echo.        if "import shutil" in line: >> fix_constants.py
-          echo.            import_found = True >> fix_constants.py
-          echo.        f.write(line.rstrip() + "\n") >> fix_constants.py
-          echo.    if not import_found: >> fix_constants.py
-          echo.        f.write("import shutil\n") >> fix_constants.py
-          echo.    f.write("\n    cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n") >> fix_constants.py
-          echo.    f.write("    print('\\r' + ' ' * cols, end='', flush=True)\n") >> fix_constants.py
+          echo """with open('udemy-py/constants.py', 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+with open('udemy-py/constants.py', 'w', encoding='utf-8') as f:
+    import_found = False
+    for line in lines:
+        if 'import shutil' in line:
+            import_found = True
+        f.write(line.rstrip() + '\n')
+    if not import_found:
+        f.write('import shutil\n')
+    f.write('\n    cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n')
+    f.write('    print(\\r' + ' ' * cols, end='', flush=True)\n')""" > fix_constants.py
           py fix_constants.py
-
 
       - name: Test Download
         shell: cmd
