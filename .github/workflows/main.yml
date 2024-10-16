@@ -59,7 +59,12 @@ jobs:
 
           # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
-
+          
+      - name: Setup terminal emulation
+        run: |
+          echo "::set-env name=COLUMNS::80"
+          echo "::set-env name=LINES::24"
+          
       - name: Test Download
         run: |
           $Env:PYTHONIOENCODING = "utf-8"
