@@ -67,7 +67,7 @@ jobs:
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
           set PATH=%PATH%
           certutil -urlcache -split -f "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EaU4J7D9IRVJiD7Y3Qtyxt4Bah_4pxjoshdZMRO17H0NQw?e=ThxC20&download=1" .\udemy-py\cookies.txt
-          py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies .\udemy-py\cookies.txt --captions en_US --srt
+          py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies .\udemy-py\cookies.txt --captions en_US --srt --concurrent 10000
 
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
