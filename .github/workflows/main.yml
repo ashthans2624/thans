@@ -64,14 +64,20 @@ jobs:
         shell: pwsh
         run: |
           $script = @"
-          def replace_line(file_path, line_num, new_content):
+          def replace_line_with_indent(file_path, target_text, new_content):
               with open(file_path, 'r+') as file:
                   lines = file.readlines()
-                  lines[line_num - 1] = new_content + '\n'
+                  for i, line in enumerate(lines):
+                      if target_text in line:
+                          lines[i] = line[:len(line) - len(line.lstrip())] + new_content + '\n'
+                          break
                   file.seek(0)
                   file.writelines(lines)
 
-          replace_line('./udemy-py/constants.py', 90, '        import shutil\n        cols = shutil.get_terminal_size(fallback=(80, 20)).columns')
+          # Gọi hàm thay thế
+          replace_line_with_indent('./udemy-py/constants.py', 
+                                   'cols = os.get_terminal_size().columns', 
+                                   'import shutil\ncols = shutil.get_terminal_size(fallback=(80, 20)).columns')
           "@
           $script | Out-File -FilePath ".\udemy-py\fix_constants.py"
 
