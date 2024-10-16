@@ -71,10 +71,12 @@ jobs:
           echo with open("udemy-py/constants.py", "w", encoding="utf-8") as f: >> fix_constants.py
           echo.    for line in lines: >> fix_constants.py
           echo.        if "os.get_terminal_size()" in line: >> fix_constants.py
-          echo.            f.write("        cols = shutil.get_terminal_size(fallback=(80, 20)).columns\\n") >> fix_constants.py
+          echo.            f.write("        cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n") >> fix_constants.py
+          echo.            f.write("        print('\\r' + ' ' * cols, end='', flush=True)\n") >> fix_constants.py
           echo.        else: >> fix_constants.py
           echo.            f.write(line) >> fix_constants.py
           py fix_constants.py
+
 
       - name: Test Download
         shell: cmd
