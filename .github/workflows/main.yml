@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        
       - name: Enable RDP and change RDP port
         shell: pwsh
         run: |
@@ -18,30 +18,46 @@ jobs:
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
           # Enable user authentication for RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
+          
           # Change RDP port to 50000
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
+          
+          # Restart the Terminal Services service
           Stop-Service TermService -Force
           Start-Service TermService
+          
+          # Add firewall rule for port 50000
           New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
+          
+          # Find firewall rules matching "RemoteDesktop-UserMode" and disable them
           Get-NetFirewallRule | Where-Object { $_.Name -match "RemoteDesktop-UserMode" } | Set-NetFirewallRule -Enabled False
+          
+          # Reset password for user "runneradmin"
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
 
       - name: Set up udemy-py
         shell: cmd
         run: |
+          # Clone the udemy-py repository
           git clone https://github.com/swargaraj/udemy-py.git
+          
+          # Download necessary tools: ffmpeg, N_m3u8DL-RE, and Bento4
           curl -L -o ffmpeg.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
           curl -L -o N_m3u8DL-RE.zip https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.2.1-beta/N_m3u8DL-RE_Beta_win-x64_20240828.zip
           curl -L -o bento4.zip https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip
-          mkdir bin
-          # Use PowerShell to extract the ZIP files
-          Expand-Archive -Path ffmpeg.zip -DestinationPath bin
-          Expand-Archive -Path N_m3u8DL-RE.zip -DestinationPath bin
-          Expand-Archive -Path bento4.zip -DestinationPath bin
+
+          # Create 'bin' directory and extract downloaded files into it
+          mkdir bin && tar -xf ffmpeg.zip -C bin && tar -xf N_m3u8DL-RE.zip -C bin && tar -xf bento4.zip -C bin
+
+          # Rename the extracted directories for easier access
           ren bin\ffmpeg-master-latest-win64-gpl ffmpeg
           ren bin\N_m3u8DL-RE_Beta_win-x64 N_m3u8DL-RE
           ren bin\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32 bento4
+
+          # Remove the downloaded zip files after extraction
           del *.zip
+
+          # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
 
       - name: Create fix_constants.py to patch the constants.py file
@@ -64,7 +80,7 @@ jobs:
       - name: Run fix_constants.py to patch constants.py
         shell: cmd
         run: py .\udemy-py\fix_constants.py
-
+        
       - name: Test Download
         shell: cmd
         run: |
@@ -72,7 +88,6 @@ jobs:
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
           set PATH=%PATH%
           certutil -urlcache -split -f "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EePwwLCA-E1JjP_EyjblvB8Bz8HgW4clgrmCM_FdCkywpQ?e=hsGrSv&download=1" .\udemy-py\cookies.txt
-          set PYTHONIOENCODING=utf-8
           py .\udemy-py\main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies .\udemy-py\cookies.txt --captions en_US --srt
 
       - name: Download and Extract ngrok for creating secure tunnels
@@ -80,11 +95,11 @@ jobs:
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
           Expand-Archive -Path ".\ngrok.zip"
           Remove-Item -Path ".\ngrok.zip"
-
+          
       - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
+          
       - name: Start an ngrok tunnel for port 50000 with specified region
         run: .\ngrok\ngrok.exe tcp --region=us-cal-1 50000
