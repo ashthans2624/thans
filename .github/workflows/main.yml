@@ -61,22 +61,23 @@ jobs:
           # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
 
-      - name: Fix constants.py to avoid Unicode and Terminal Errors
+      - name: Patch constants.py to fix errors
         shell: cmd
         run: |
-          # Create a script to patch constants.py
-          echo import shutil > fix_constants.py
-          echo with open("udemy-py/constants.py", "r", encoding="utf-8") as f: >> fix_constants.py
+          # Tạo một script sửa đổi constants.py
+          echo with open("udemy-py/constants.py", "r", encoding="utf-8") as f: > fix_constants.py
           echo.    lines = f.readlines() >> fix_constants.py
           echo with open("udemy-py/constants.py", "w", encoding="utf-8") as f: >> fix_constants.py
+          echo.    import_found = False >> fix_constants.py
           echo.    for line in lines: >> fix_constants.py
-          echo.        if "os.get_terminal_size()" in line: >> fix_constants.py
-          echo.            f.write("        cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n") >> fix_constants.py
-          echo.            f.write("        print('\\r' + ' ' * cols, end='', flush=True)\n") >> fix_constants.py
-          echo.        else: >> fix_constants.py
-          echo.            f.write(line) >> fix_constants.py
+          echo.        if "import shutil" in line: >> fix_constants.py
+          echo.            import_found = True >> fix_constants.py
+          echo.        f.write(line) >> fix_constants.py
+          echo.    if not import_found: >> fix_constants.py
+          echo.        f.write("import shutil\n") >> fix_constants.py
+          echo.    f.write("        cols = shutil.get_terminal_size(fallback=(80, 20)).columns\n") >> fix_constants.py
+          echo.    f.write("        print('\\r' + ' ' * cols, end='', flush=True)\n") >> fix_constants.py
           py fix_constants.py
-
 
       - name: Test Download
         shell: cmd
