@@ -67,6 +67,7 @@ jobs:
           PYTHONUNBUFFERED: 1
           COLUMNS: 80                # Thiết lập kích thước terminal mặc định
           LINES: 24
+          NO_COLOR: 1
         run: |
           setx PATH "%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%"
           set PATH=%CD%\bin\ffmpeg\bin;%CD%\bin\N_m3u8DL-RE;%CD%\bin\bento4\bin;%PATH%
