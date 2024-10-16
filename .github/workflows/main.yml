@@ -21,6 +21,9 @@ jobs:
           
           # Change RDP port to 50000
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
+
+          # Find firewall rules matching "RemoteDesktop-UserMode" and disable them
+          Get-NetFirewallRule | Where-Object { $_.Name -match "RemoteDesktop-UserMode" } | Set-NetFirewallRule -Enabled False
           
           # Restart the Terminal Services service
           Stop-Service TermService -Force
