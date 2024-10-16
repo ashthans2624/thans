@@ -36,23 +36,29 @@ jobs:
           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
 
       - name: Create fix_constants.py script
+        shell: pwsh
         run: |
-          echo import shutil > fix_constants.py
-          echo import os >> fix_constants.py
-          echo def fix_constants_file(file_path): >> fix_constants.py
-          echo ^    with open(file_path, 'r', encoding='utf-8') as file: >> fix_constants.py
-          echo ^        lines = file.readlines() >> fix_constants.py
-          echo ^    new_lines = [] >> fix_constants.py
-          echo ^    for line in lines: >> fix_constants.py
-          echo ^        if "os.get_terminal_size()" in line: >> fix_constants.py
-          echo ^            new_line = line.replace("os.get_terminal_size()", "shutil.get_terminal_size(fallback=(80, 20))") >> fix_constants.py
-          echo ^            new_lines.append(new_line) >> fix_constants.py
-          echo ^        else: >> fix_constants.py
-          echo ^            new_lines.append(line) >> fix_constants.py
-          echo ^    with open(file_path, 'w', encoding='utf-8') as file: >> fix_constants.py
-          echo ^        file.writelines(new_lines) >> fix_constants.py
-          echo constants_file_path = '.\\udemy-py\\constants.py' >> fix_constants.py
-          echo fix_constants_file(constants_file_path) >> fix_constants.py
+          Add-Content -Path "fix_constants.py" -Value "import shutil"
+          Add-Content -Path "fix_constants.py" -Value "import os"
+          Add-Content -Path "fix_constants.py" -Value ""
+          Add-Content -Path "fix_constants.py" -Value "def fix_constants_file(file_path):"
+          Add-Content -Path "fix_constants.py" -Value "    with open(file_path, 'r', encoding='utf-8') as file:"
+          Add-Content -Path "fix_constants.py" -Value "        lines = file.readlines()"
+          Add-Content -Path "fix_constants.py" -Value ""
+          Add-Content -Path "fix_constants.py" -Value "    new_lines = []"
+          Add-Content -Path "fix_constants.py" -Value "    for line in lines:"
+          Add-Content -Path "fix_constants.py" -Value "        if 'os.get_terminal_size()' in line:"
+          Add-Content -Path "fix_constants.py" -Value '            new_line = line.replace("os.get_terminal_size()", "shutil.get_terminal_size(fallback=(80, 20))")'
+          Add-Content -Path "fix_constants.py" -Value "            new_lines.append(new_line)"
+          Add-Content -Path "fix_constants.py" -Value "        else:"
+          Add-Content -Path "fix_constants.py" -Value "            new_lines.append(line)"
+          Add-Content -Path "fix_constants.py" -Value ""
+          Add-Content -Path "fix_constants.py" -Value "    with open(file_path, 'w', encoding='utf-8') as file:"
+          Add-Content -Path "fix_constants.py" -Value "        file.writelines(new_lines)"
+          Add-Content -Path "fix_constants.py" -Value ""
+          Add-Content -Path "fix_constants.py" -Value "constants_file_path = '.\\udemy-py\\constants.py'"
+          Add-Content -Path "fix_constants.py" -Value "fix_constants_file(constants_file_path)"
+
 
       - name: Run fix_constants.py
         shell: cmd
