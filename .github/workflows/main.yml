@@ -57,7 +57,7 @@ jobs:
 
       - name: Modify constants.py in-place
         run: |
-          $filePath = "./udemy-py/constants.py"
+          $filePath = "C:\udemy-py\constants.py"
           $lineNumber = 90
           $newContent = "        import shutil`n        cols = shutil.get_terminal_size(fallback=(80, 20)).columns"
 
@@ -68,7 +68,6 @@ jobs:
           }
 
       - name: Test Download
-        shell: cmd
         run: |
           cd C:\udemy-py
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
