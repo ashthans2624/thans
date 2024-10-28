@@ -12,106 +12,83 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Enable RDP and change RDP port
-        shell: cmd
         run: |
-          REM Enable RDP
-          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-
-          REM Enable user authentication for RDP
-          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 1 /f
-
-          REM Change RDP port to 50000
-          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v PortNumber /t REG_DWORD /d 50000 /f
-
-          REM Restart the Terminal Services
-          sc stop TermService
-          sc start TermService
-
-          REM Add firewall rule for port 50000
-          netsh advfirewall firewall add rule name="Remote Desktop (TCP-In) 50000" protocol=TCP dir=in localport=50000 action=allow
-
-          REM Reset password for user "runneradmin"
-          net user runneradmin P@ssw0rd!
+          # Enable RDP
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
+          
+          # Enable user authentication for RDP
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
+          
+          # Change RDP port to 50000
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "PortNumber" -Value 50000
+          
+          # Restart the Terminal Services
+          Stop-Service TermService -Force
+          Start-Service TermService
+          
+          # Add firewall rule for port 50000
+          New-NetFirewallRule -DisplayName "Remote Desktop (TCP-In) 50000" -LocalPort 50000 -Direction Inbound -Protocol TCP -Action Allow | Out-Null
+          
+          # Reset password for user "runneradmin"
+          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
 
       - name: Set up udemy-py
-        shell: cmd
         run: |
-          REM Clone the udemy-py repository
+          # Change to the C:\ directory
+          cd C:\
+          
+          # Clone the udemy-py repository
           git clone https://github.com/swargaraj/udemy-py.git
-                    
-          REM Create the 'dependencies' directory
-          mkdir .\udemy-py\dependencies
-                    
-          REM Download necessary tools: ffmpeg, N_m3u8DL-RE, and Bento4
-          curl -L -o "ffmpeg.zip" https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
-          curl -L -o "N_m3u8DL-RE.zip" https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.2.1-beta/N_m3u8DL-RE_Beta_win-x64_20240828.zip
-          curl -L -o "bento4.zip" https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip
-
-          REM Extract the files using tar
-          tar -xf ffmpeg.zip -C .\udemy-py\dependencies
-          tar -xf N_m3u8DL-RE.zip -C .\udemy-py\dependencies
-          tar -xf bento4.zip -C .\udemy-py\dependencies
-
-          REM Delete the zip files after extraction
-          del ffmpeg.zip
-          del N_m3u8DL-RE.zip
-          del bento4.zip
-
-          REM Install required Python packages for udemy-py
+          
+          # Create the 'dependencies' directory
+          New-Item -ItemType Directory -Path ".\udemy-py\dependencies"
+          
+          # Download necessary tools: ffmpeg, N_m3u8DL-RE, and Bento4
+          (New-Object System.Net.WebClient).DownloadFile("https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip", "$PWD\ffmpeg.zip")
+          (New-Object System.Net.WebClient).DownloadFile("https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.2.1-beta/N_m3u8DL-RE_Beta_win-x64_20240828.zip", "$PWD\N_m3u8DL-RE.zip")
+          (New-Object System.Net.WebClient).DownloadFile("https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip", "$PWD\bento4.zip")
+          
+          # Extract and delete each archive in the list
+          $files = @("ffmpeg.zip", "N_m3u8DL-RE.zip", "bento4.zip")
+          foreach ($file in $files) {
+              Expand-Archive -Path ".\$file" -DestinationPath ".\udemy-py\dependencies" -Force
+              Remove-Item -Path ".\$file"
+          }
+          
+          # Install required Python packages for udemy-py
           py -m pip install -r .\udemy-py\requirements.txt
 
-      - name: Modify line 90 in constants.py to add terminal size columns
-        shell: cmd
+      - name: Modify constants.py in-place
         run: |
-          REM Create fix_constants.bat for modifying constants.py
-          (
-          @echo off
-          setlocal enabledelayedexpansion
+          $filePath = "C:\udemy-py\constants.py"
+          $lineNumber = 90
+          $newContent = "        import shutil`n        cols = shutil.get_terminal_size(fallback=(80, 20)).columns"
 
-          set "filePath=.\udemy-py\constants.py"
-          set lineNumber=90
+          $lines = Get-Content $filePath
+          if ($lines.Count -ge $lineNumber) {
+              $lines[$lineNumber - 1] = $newContent
+              Set-Content -Path $filePath -Value $lines
+          }
 
-          set tempFile=temp.txt
-          set currentLine=0
-
-          for /f "tokens=1* delims=:" %%A in ('findstr /n "^" "%filePath%"') do (
-              set /a currentLine+=1
-              if !currentLine! equ %lineNumber% (
-                  >> "%tempFile%" echo.        import shutil
-                  >> "%tempFile%" echo.        cols = shutil.get_terminal_size(fallback^(80, 20^)^).columns
-              ) else (
-                  >> "%tempFile%" echo %%B
-              )
-          )
-
-          move /Y "%tempFile%" "%filePath%"
-          endlocal
-          ) > fix_constants.bat
-          
-          REM Run fix_constants.bat to apply changes
-          fix_constants.bat
-          
-          REM Delete fix_constants.bat after execution
-          del fix_constants.bat
-          
       - name: Set Environment Variables and Download Udemy Course
-        shell: cmd
-        run: |          
+        run: |
+          # Change to the C:\udemy-py directory
+          cd C:\udemy-py
+          
           # Add dependencies to the system PATH
-          setx PATH "%CD%\udemy-py\dependencies\ffmpeg-master-latest-win64-gpl\bin;%CD%\udemy-py\dependencies\N_m3u8DL-RE_Beta_win-x64;%CD%\udemy-py\dependencies\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32\bin;%PATH%"
-          set PATH=%CD%\udemy-py\dependencies\ffmpeg-master-latest-win64-gpl\bin;%CD%\udemy-py\dependencies\N_m3u8DL-RE_Beta_win-x64;%CD%\udemy-py\dependencies\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32\bin;%PATH%
-          set PATH=%PATH%
-         
+          $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+          $path += ";$PWD\dependencies\ffmpeg-master-latest-win64-gpl\bin"
+          $path += ";$PWD\dependencies\N_m3u8DL-RE_Beta_win-x64"
+          $path += ";$PWD\dependencies\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32\bin"
+          [System.Environment]::SetEnvironmentVariable("Path", $path, "Machine")
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+          
           # Download cookies file required for authentication
-          certutil -urlcache -split -f "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EePwwLCA-E1JjP_EyjblvB8Bz8HgW4clgrmCM_FdCkywpQ?e=hsGrSv&download=1" .\udemy-py\cookies.txt
+          Invoke-WebRequest -Uri "https://hustk62-my.sharepoint.com/:t:/g/personal/hieu_hoangduy_hustk62_onmicrosoft_com/EePwwLCA-E1JjP_EyjblvB8Bz8HgW4clgrmCM_FdCkywpQ?e=hsGrSv&download=1" -OutFile "cookies.txt"
           
           # Set Python encoding to UTF-8
-          set PYTHONIOENCODING=utf-8
+          $Env:PYTHONIOENCODING = "utf-8"
           
-          # Download the Udemy course
-          cd udemy-py
-          py main.py --url https://www.udemy.com/course/csharp-advanced --key 06998ec48a3f4866a8fb3d2831026bb1:408fc6eb8a1182c1ac7ee8458b6521c5 --cookies cookies.txt --captions en_US --srt
-
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ".\ngrok.zip"
