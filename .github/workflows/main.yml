@@ -13,23 +13,96 @@ jobs:
     env:
       RDP_USERNAME: ${{ secrets.RDP_USERNAME || 'runneradmin' }}
       RDP_PASSWORD: ${{ secrets.RDP_PASSWORD || 'P@ssw0rd!' }}
+      WINDSURF_INSTALL_DIR: 'C:\WindsurfInstall'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
       - name: Cache WindsurfUserSetup installer
-        id: cache-windsurf
+        id: cache-windsurf-installer
         uses: actions/cache@v3
         with:
           path: .\WindsurfUserSetup-x64-1.5.9.exe
           key: windsurf-installer-1.5.9
           restore-keys: |
             windsurf-installer-
-          
+      
+      - name: Cache Windsurf Installation
+        id: cache-windsurf-install
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.WINDSURF_INSTALL_DIR }}
+          key: windsurf-installation-1.5.9
+          restore-keys: |
+            windsurf-installation-
+      
       - name: Download WindsurfUserSetup if not cached
-        if: steps.cache-windsurf.outputs.cache-hit != 'true'
+        if: steps.cache-windsurf-installer.outputs.cache-hit != 'true'
         run: |
           Start-BitsTransfer -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination ".\WindsurfUserSetup-x64-1.5.9.exe"
+      
+      - name: Install WindsurfUserSetup if not cached installation
+        if: steps.cache-windsurf-install.outputs.cache-hit != 'true'
+        run: |
+          # Create installation directory if it doesn't exist
+          if (-not (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}")) {
+            New-Item -ItemType Directory -Path "${{ env.WINDSURF_INSTALL_DIR }}" -Force
+          }
+          
+          # Install to custom directory with logging
+          Write-Host "Installing Windsurf to custom directory for caching"
+          
+          # Khởi chạy setup mà không chờ đợi
+          $process = Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=${{ env.WINDSURF_INSTALL_DIR }}" -PassThru
+          
+          # Chờ với timeout, tối đa 5 phút
+          $timeout = 300
+          $timer = [Diagnostics.Stopwatch]::StartNew()
+          
+          Write-Host "Waiting for installation to complete (timeout: $timeout seconds)..."
+          
+          # Giám sát quá trình cài đặt
+          while (-not $process.HasExited -and $timer.Elapsed.TotalSeconds -lt $timeout) {
+            # Kiểm tra tiến trình mỗi 5 giây
+            Start-Sleep -Seconds 5
+            
+            # Kiểm tra file chính để xem đã cài đặt chưa
+            if (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}\Windsurf.exe") {
+              Write-Host "Windsurf.exe detected, installation may be complete"
+              break
+            }
+          }
+          
+          # Kiểm tra nếu quá trình vẫn chạy sau thời gian chờ
+          if (-not $process.HasExited) {
+            Write-Host "Installation is taking too long, proceeding anyway..."
+            try {
+              # Cố gắng kết thúc tiến trình nếu nó vẫn đang chạy (không báo lỗi nếu thất bại)
+              $process | Stop-Process -Force -ErrorAction SilentlyContinue
+            } catch {
+              Write-Host "Could not stop installer process, but continuing"
+            }
+          } else {
+            Write-Host "Installation process completed with exit code: $($process.ExitCode)"
+          }
+          
+          # Đợi thêm 10 giây để đảm bảo các file được ghi đầy đủ
+          Start-Sleep -Seconds 10
+          
+          # Verify installation
+          if (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}") {
+            $fileCount = (Get-ChildItem -Path "${{ env.WINDSURF_INSTALL_DIR }}" -Recurse | Measure-Object).Count
+            Write-Host "Windsurf installation directory contains $fileCount files"
+            
+            if ($fileCount -gt 5) {
+              Write-Host "Windsurf installation appears to be successful for caching"
+            } else {
+              Write-Warning "Installation directory has very few files, may be incomplete"
+            }
+          } else {
+            Write-Error "Windsurf installation failed - directory not found"
+            exit 1
+          }
       
       - name: Cache ngrok
         id: cache-ngrok
@@ -60,6 +133,7 @@ jobs:
       RDP_USERNAME: ${{ needs.setup-and-cache.outputs.rdp_username }}
       RDP_PASSWORD: ${{ needs.setup-and-cache.outputs.rdp_password }}
       NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      WINDSURF_INSTALL_DIR: 'C:\WindsurfInstall'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -115,51 +189,93 @@ jobs:
           # Restart the service
           Start-Service TermService
 
-      # Restore/Save installed Windsurf application cache
-      - name: Cache installed Windsurf application
-        id: cache-installed-windsurf
+      # Sử dụng cache của cài đặt Windsurf
+      - name: Restore Windsurf Installation from cache
+        id: cache-windsurf-install
         uses: actions/cache@v3
         with:
-          # IMPORTANT: This assumes the default installation path
-          path: ${{ env.LOCALAPPDATA }}\\Programs\\Codeium
-          key: windsurf-installed-${{ runner.os }}-1.5.9
+          path: ${{ env.WINDSURF_INSTALL_DIR }}
+          key: windsurf-installation-1.5.9
+          restore-keys: |
+            windsurf-installation-
 
-      # Restore Windsurf installer (needed if installed cache missed)
-      - name: Restore Windsurf installer from cache
+      # Sử dụng cache installer nếu cần cài đặt mới
+      - name: Cache WindsurfUserSetup installer
         id: cache-windsurf-installer
         uses: actions/cache@v3
         with:
-          path: .\\WindsurfUserSetup-x64-1.5.9.exe
-          key: windsurf-installer-1.5.9 # Match key from setup-and-cache job
+          path: .\WindsurfUserSetup-x64-1.5.9.exe
+          key: windsurf-installer-1.5.9
+          restore-keys: |
+            windsurf-installer-
 
-      - name: Install WindsurfUserSetup if not already cached
-        if: steps.cache-installed-windsurf.outputs.cache-hit != 'true'
+      - name: Install or Use Cached WindsurfUserSetup
         run: |
-          # Use absolute path to be certain
-          $InstallerPath = Join-Path -Path $PWD -ChildPath "WindsurfUserSetup-x64-1.5.9.exe"
-          Write-Host "Installer Path set to: $InstallerPath"
-          # Check if installer executable exists (restored from cache)
-          if (-not (Test-Path $InstallerPath)) {
-            Write-Host "Installer executable not found in cache or at specified path, downloading..."
-            # Add ErrorAction Stop to ensure download errors halt the script
-            Start-BitsTransfer -ErrorAction Stop -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination $InstallerPath
+          if (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}") {
+            # Sử dụng từ cache
+            Write-Host "Using cached Windsurf installation"
+            Get-ChildItem -Path "${{ env.WINDSURF_INSTALL_DIR }}" -Recurse | Measure-Object | Select-Object -ExpandProperty Count
+            
+            # Tạo các shortcut hoặc registry nếu cần
+            if (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}\Windsurf.exe") {
+              # Tạo shortcut trên desktop nếu cần
+              $WshShell = New-Object -ComObject WScript.Shell
+              $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Windsurf.lnk")
+              $Shortcut.TargetPath = "${{ env.WINDSURF_INSTALL_DIR }}\Windsurf.exe"
+              $Shortcut.Save()
+            }
           } else {
-            Write-Host "Using cached installer executable."
+            # Nếu không có cache installation, tải installer và cài đặt
+            if (Test-Path ".\WindsurfUserSetup-x64-1.5.9.exe") {
+              Write-Host "Using cached WindsurfUserSetup installer"
+            } else {
+              Write-Host "Downloading WindsurfUserSetup"
+              Start-BitsTransfer -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination ".\WindsurfUserSetup-x64-1.5.9.exe"
+            }
+            
+            # Tạo thư mục đích
+            if (-not (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}")) {
+              New-Item -ItemType Directory -Path "${{ env.WINDSURF_INSTALL_DIR }}" -Force
+            }
+            
+            # Cài đặt vào thư mục được chỉ định
+            Write-Host "Installing Windsurf to ${{ env.WINDSURF_INSTALL_DIR }}"
+            
+            # Khởi chạy setup mà không chờ đợi
+            $process = Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=${{ env.WINDSURF_INSTALL_DIR }}" -PassThru
+            
+            # Chờ với timeout, tối đa 5 phút
+            $timeout = 300
+            $timer = [Diagnostics.Stopwatch]::StartNew()
+            
+            Write-Host "Waiting for installation to complete (timeout: $timeout seconds)..."
+            
+            # Giám sát quá trình cài đặt
+            while (-not $process.HasExited -and $timer.Elapsed.TotalSeconds -lt $timeout) {
+              # Kiểm tra tiến trình mỗi 5 giây
+              Start-Sleep -Seconds 5
+              
+              # Kiểm tra file chính để xem đã cài đặt chưa
+              if (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}\Windsurf.exe") {
+                Write-Host "Windsurf.exe detected, installation may be complete"
+                break
+              }
+            }
+            
+            # Kiểm tra nếu quá trình vẫn chạy sau thời gian chờ
+            if (-not $process.HasExited) {
+              Write-Host "Installation is taking too long, proceeding anyway..."
+              try {
+                # Cố gắng kết thúc tiến trình nếu nó vẫn đang chạy
+                $process | Stop-Process -Force -ErrorAction SilentlyContinue
+              } catch {
+                Write-Host "Could not stop installer process, but continuing"
+              }
+            }
           }
-          # Install Windsurf silently and wait for completion
-          Write-Host "Installing Windsurf..."
-          # Try /S instead of /VERYSILENT as an alternative silent switch
-          Start-Process -FilePath $InstallerPath -ArgumentList "/S", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
-          Write-Host "Windsurf installation finished."
-          # Start related processes AFTER installation is complete
+          
+          # Mở trình duyệt sau khi cài đặt hoặc khôi phục cache
           Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register", "https://mail.tm/"
-
-      - name: Confirm Windsurf Installation (if cache hit)
-        if: steps.cache-installed-windsurf.outputs.cache-hit == 'true'
-        run: |
-            Write-Host "Using cached Windsurf installation from ${{ env.LOCALAPPDATA }}\\Programs\\Codeium"
-            # Optionally add verification steps for the cached installation here
-            # Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register", "https://mail.tm/"
 
       # Sử dụng cache ngrok từ job trước
       - name: Cache ngrok
