@@ -48,7 +48,7 @@ jobs:
         if: steps.cache-windsurf-installation.outputs.cache-hit != 'true'
         run: |
           Write-Host "Installing Windsurf from installer"
-          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Verb RunAs
           Write-Host "Windsurf installation completed and will be cached"
       
       - name: Cache ngrok
