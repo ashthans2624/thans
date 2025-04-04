@@ -145,7 +145,7 @@ jobs:
           }
           # Install Windsurf silently and wait for completion
           Write-Host "Installing Windsurf..."
-          Start-Process -FilePath $InstallerPath -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -Verb RunAs
+          Start-Process -FilePath $InstallerPath -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
           Write-Host "Windsurf installation finished."
           # Start related processes AFTER installation is complete
           Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register", "https://mail.tm/"
