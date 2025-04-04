@@ -135,10 +135,12 @@ jobs:
       - name: Install WindsurfUserSetup if not already cached
         if: steps.cache-installed-windsurf.outputs.cache-hit != 'true'
         run: |
-          $InstallerPath = ".\\WindsurfUserSetup-x64-1.5.9.exe"
+          # Use absolute path to be certain
+          $InstallerPath = Join-Path -Path $PWD -ChildPath "WindsurfUserSetup-x64-1.5.9.exe"
+          Write-Host "Installer Path set to: $InstallerPath"
           # Check if installer executable exists (restored from cache)
           if (-not (Test-Path $InstallerPath)) {
-            Write-Host "Installer executable not found in cache, downloading..."
+            Write-Host "Installer executable not found in cache or at specified path, downloading..."
             Start-BitsTransfer -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination $InstallerPath
           } else {
             Write-Host "Using cached installer executable."
