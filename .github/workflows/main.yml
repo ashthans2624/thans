@@ -141,13 +141,15 @@ jobs:
           # Check if installer executable exists (restored from cache)
           if (-not (Test-Path $InstallerPath)) {
             Write-Host "Installer executable not found in cache or at specified path, downloading..."
-            Start-BitsTransfer -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination $InstallerPath
+            # Add ErrorAction Stop to ensure download errors halt the script
+            Start-BitsTransfer -ErrorAction Stop -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination $InstallerPath
           } else {
             Write-Host "Using cached installer executable."
           }
           # Install Windsurf silently and wait for completion
           Write-Host "Installing Windsurf..."
-          Start-Process -FilePath $InstallerPath -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          # Try /S instead of /VERYSILENT as an alternative silent switch
+          Start-Process -FilePath $InstallerPath -ArgumentList "/S", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
           Write-Host "Windsurf installation finished."
           # Start related processes AFTER installation is complete
           Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register", "https://mail.tm/"
