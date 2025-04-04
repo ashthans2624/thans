@@ -51,7 +51,7 @@ jobs:
           
           # Install to custom directory with logging
           Write-Host "Installing Windsurf to custom directory for caching"
-          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=${{ env.WINDSURF_INSTALL_DIR }}" -Verb RunAs
+          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=${{ env.WINDSURF_INSTALL_DIR }}" -Verb RunAs -Wait
           
           # Verify installation
           if (Test-Path "${{ env.WINDSURF_INSTALL_DIR }}") {
@@ -198,7 +198,7 @@ jobs:
             
             # Cài đặt vào thư mục được chỉ định
             Write-Host "Installing Windsurf to ${{ env.WINDSURF_INSTALL_DIR }}"
-            Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=${{ env.WINDSURF_INSTALL_DIR }}" -Verb RunAs
+            Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=${{ env.WINDSURF_INSTALL_DIR }}" -Verb RunAs -Wait
           }
           
           # Mở trình duyệt sau khi cài đặt hoặc khôi phục cache
