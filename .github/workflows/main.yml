@@ -1,225 +1,53 @@
 name: CI for WindsurfUserSetup
+
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  setup-and-cache:
+  build:
     runs-on: windows-latest
-    outputs:
-      rdp_username: ${{ env.RDP_USERNAME }}
-      rdp_password: ${{ env.RDP_PASSWORD }}
-      ngrok_token: ${{ env.NGROK_AUTH_TOKEN }}
-    env:
-      RDP_USERNAME: ${{ secrets.RDP_USERNAME || 'runneradmin' }}
-      RDP_PASSWORD: ${{ secrets.RDP_PASSWORD || 'P@ssw0rd!' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Cache WindsurfUserSetup installer
-        id: cache-windsurf
-        uses: actions/cache@v3
-        with:
-          path: .\WindsurfUserSetup-x64-1.5.9.exe
-          key: windsurf-installer-1.5.9
-          restore-keys: |
-            windsurf-installer-
-          
-      - name: Download WindsurfUserSetup if not cached
-        if: steps.cache-windsurf.outputs.cache-hit != 'true'
+
+      - name: Enable TS
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+      
+      - name: Download and Install WindsurfUserSetup
+        shell: powershell
         run: |
           Start-BitsTransfer -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination ".\WindsurfUserSetup-x64-1.5.9.exe"
-      
-      - name: Cache ngrok
-        id: cache-ngrok
-        uses: actions/cache@v3
-        with:
-          path: .\ngrok
-          key: ngrok-v3-stable-windows-amd64
-          restore-keys: |
-            ngrok-v3-stable-
+          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"
+          Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register"
 
-      - name: Download and Extract ngrok if not cached
-        if: steps.cache-ngrok.outputs.cache-hit != 'true'
+      - name: Download and Extract ngrok for creating secure tunnels
         run: |
           Start-BitsTransfer -Source "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -Destination ".\ngrok.zip"
           Expand-Archive -Path '.\ngrok.zip'
           Remove-Item -Path '.\ngrok.zip'
       
-      - name: Setup complete
-        run: |
-          Write-Host "Setup and cache completed successfully"
-          Write-Host "You can now run the RDP server job"
-
-  # Tạo job riêng biệt để chạy RDP server
-  rdp-server:
-    needs: setup-and-cache
-    runs-on: windows-latest
-    env:
-      RDP_USERNAME: ${{ needs.setup-and-cache.outputs.rdp_username }}
-      RDP_PASSWORD: ${{ needs.setup-and-cache.outputs.rdp_password }}
-      NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Enable RDP connections
-        run: |
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-          Set-LocalUser -Name "${{ env.RDP_USERNAME }}" -Password (ConvertTo-SecureString -AsPlainText "${{ env.RDP_PASSWORD }}" -Force)
-
-      - name: Allow multiple RDP connections
-        run: |
-          # File paths
-          $termsrvDllFile = "$env:SystemRoot\System32\termsrv.dll"
-          $termsrvDllCopy = "$env:SystemRoot\System32\termsrv.dll.copy"
-
-          # Stop Terminal Service
-          Stop-Service -Name TermService -Force
-
-          # Backup ACL and original file
-          $termsrvDllAcl = Get-Acl -Path $termsrvDllFile
-          Copy-Item -Path $termsrvDllFile -Destination $termsrvDllCopy -Force
-
-          # Take ownership and grant access rights
-          takeown.exe /F $termsrvDllFile > $null
-          $currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-          icacls.exe $termsrvDllFile /grant "$($currentUserName):F" > $null
-
-          # Read file as byte array and prepare for replacement
-          $dllAsByte = [System.IO.File]::ReadAllBytes($termsrvDllFile)
-          $dllAsText = ($dllAsByte | ForEach-Object { $_.ToString('X2') }) -join ' '
-
-          # Define byte pattern to find RDP connection limit code
-          $pattern = [regex]'39 81 3C 06 00 00 0F (?:[0-9A-F]{2} ){4}00'
-          $replacement = 'B8 00 01 00 00 89 81 38 06 00 00 90'
-
-          # Check if the pattern is found
-          $match = $dllAsText -match $pattern
-
-          if ($match) {
-              # Perform replacement
-              $dllAsTextReplaced = $dllAsText -replace $pattern, $replacement
-              [byte[]] $dllAsBytesReplaced = -split $dllAsTextReplaced -replace '^', '0x'
-              
-              # Write directly to the original file
-              [System.IO.File]::WriteAllBytes($termsrvDllFile, $dllAsBytesReplaced)
-          }
-
-          # Restore permissions
-          Set-Acl -Path $termsrvDllFile -AclObject $termsrvDllAcl
-
-          # Restart the service
-          Start-Service TermService
-
-      # Restore/Save installed Windsurf application cache
-      - name: Cache installed Windsurf application
-        id: cache-installed-windsurf
-        uses: actions/cache@v3
-        with:
-          # IMPORTANT: This assumes the default installation path
-          path: ${{ env.LOCALAPPDATA }}\\Programs\\Codeium
-          key: windsurf-installed-${{ runner.os }}-1.5.9
-
-      # Restore Windsurf installer (needed if installed cache missed)
-      - name: Restore Windsurf installer from cache
-        id: cache-windsurf-installer
-        uses: actions/cache@v3
-        with:
-          path: .\\WindsurfUserSetup-x64-1.5.9.exe
-          key: windsurf-installer-1.5.9 # Match key from setup-and-cache job
-
-      - name: Install WindsurfUserSetup if not already cached
-        if: steps.cache-installed-windsurf.outputs.cache-hit != 'true'
-        run: |
-          # Use absolute path to be certain
-          $InstallerPath = Join-Path -Path $PWD -ChildPath "WindsurfUserSetup-x64-1.5.9.exe"
-          Write-Host "Installer Path set to: $InstallerPath"
-          # Check if installer executable exists (restored from cache)
-          if (-not (Test-Path $InstallerPath)) {
-            Write-Host "Installer executable not found in cache or at specified path, downloading..."
-            Start-BitsTransfer -Source "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/b3241b91445f79878ccc91626dfe190f90563e53/WindsurfUserSetup-x64-1.5.9.exe" -Destination $InstallerPath
-          } else {
-            Write-Host "Using cached installer executable."
-          }
-          # Install Windsurf silently and wait for completion
-          Write-Host "Installing Windsurf..."
-          Start-Process -FilePath $InstallerPath -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Verb RunAs -Wait
-          Write-Host "Windsurf installation finished."
-          # Start related processes AFTER installation is complete
-          Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register", "https://mail.tm/"
-
-      - name: Confirm Windsurf Installation (if cache hit)
-        if: steps.cache-installed-windsurf.outputs.cache-hit == 'true'
-        run: |
-            Write-Host "Using cached Windsurf installation from ${{ env.LOCALAPPDATA }}\\Programs\\Codeium"
-            # Optionally add verification steps for the cached installation here
-            # Start-Process "msedge.exe" -ArgumentList "--no-first-run", "--no-default-browser-check", "--start-maximized", "https://codeium.com/account/register", "https://mail.tm/"
-
-      # Sử dụng cache ngrok từ job trước
-      - name: Cache ngrok
-        id: cache-ngrok
-        uses: actions/cache@v3
-        with:
-          path: .\ngrok
-          key: ngrok-v3-stable-windows-amd64
-          restore-keys: |
-            ngrok-v3-stable-
-
-      - name: Setup ngrok
-        run: |
-          if (-not (Test-Path ".\ngrok\ngrok.exe")) {
-            # Tải ngrok nếu không có trong cache
-            Write-Host "Downloading ngrok"
-            Start-BitsTransfer -Source "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -Destination ".\ngrok.zip"
-            Expand-Archive -Path '.\ngrok.zip'
-            Remove-Item -Path '.\ngrok.zip'
-          } else {
-            Write-Host "Using cached ngrok"
-          }
-
-      - name: Authenticate with ngrok
+      - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Create user accounts for RDP access
+      
+      - name: Start ngrok in background and get tunnel info
         run: |
-          # Create secure password for accounts
-          $Password = ConvertTo-SecureString -String "P@ssw0rd!" -AsPlainText -Force
-          
-          # Create 10 user accounts
-          for ($i = 1; $i -le 10; $i++) {
-              # Create or update account
-              New-LocalUser -Name "runner$i" -Password $Password -FullName "Runner User $i" -Description "Additional RDP user" -AccountNeverExpires -ErrorAction SilentlyContinue
-              
-              # Add account to Remote Desktop Users group
-              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "runner$i" -ErrorAction SilentlyContinue
-          }
-
-      - name: Start ngrok tunnel for RDP
-        run: |
-          # Start ngrok in background to create a TCP tunnel to port 3389 (RDP)
           Start-Process -FilePath ".\ngrok\ngrok.exe" -ArgumentList "tcp", "--region=us-cal-1", "3389" -NoNewWindow
-   
-          # Query the ngrok API to retrieve the public URL for RDP connection
+     
+          # Retrieve and display the public URL
           $ngrokAPI = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels
           $publicUrl = $ngrokAPI.tunnels[0].public_url
-          
-          # Display connection information for RDP access
+
           Write-Host "=============================================="
-          Write-Host "RDP Connection Information:"
           Write-Host "NGROK Public URL: $publicUrl"
-          Write-Host "Primary Username: ${{ env.RDP_USERNAME }}"
-          Write-Host "Primary Password: ${{ env.RDP_PASSWORD }}"
-          Write-Host ""
-          Write-Host "Additional users: runner1 through runner10"
-          Write-Host "Password for all accounts: P@ssw0rd!"
+          Write-Host "Username: runneradmin"
+          Write-Host "Password: P@ssw0rd!"
           Write-Host "=============================================="
-          
-          # Keep the GitHub Actions runner active to allow RDP connections
-          Write-Host "Runner will remain active for 6 hours"
+          # Keep the action running for a while to allow connection
           Start-Sleep -Seconds 21600  # Run for 6 hours or adjust as needed
