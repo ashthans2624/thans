@@ -169,7 +169,7 @@ jobs:
           
           # Cài đặt từ file .exe
           Write-Host "Installing WindsurfUserSetup from exe"
-          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          Start-Process -FilePath ".\WindsurfUserSetup-x64-1.5.9.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Verb RunAs
       
       - name: Start Windsurf and browser
         run: |
