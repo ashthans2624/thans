@@ -11,84 +11,130 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Enable TS
-        run: |
-          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -name "fDenyTSConnections" -Value 0
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -name "UserAuthentication" -Value 1
-          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-
       - name: Change Python version
         run: |
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
           $path = $path -replace ";C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\Scripts", ""
           $path = $path -replace ";C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64", ""
-          $path += ";${{ runner.tool_cache }}\Python\3.12.7\x64\Scripts;${{ runner.tool_cache }}\Python\3.12.7\x64"
+          $path += ";${{ runner.tool_cache }}\Python\3.12.8\x64\Scripts;${{ runner.tool_cache }}\Python\3.12.8\x64"
           [System.Environment]::SetEnvironmentVariable("Path", $path, "Machine")
 
-      - name: Set up Udemy Downloader
-        run: |
           cd C:\
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-          git clone https://github.com/hoangduyhieu/udm.git
-          New-Item -Path ".\udemy-py\cookies.txt" -ItemType File -Force
-          New-Item -ItemType Directory -Path ".\udemy-py\dependencies" -Force
-          (New-Object System.Net.WebClient).DownloadFile("https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip", "C:\ffmpeg-master-latest-win64-gpl.zip")
-          Expand-Archive -Path ".\ffmpeg-master-latest-win64-gpl.zip" -DestinationPath ".\udemy-py\dependencies" -Force
-          Remove-Item -Path ".\ffmpeg-master-latest-win64-gpl.zip"
-          (New-Object System.Net.WebClient).DownloadFile("https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip", "C:\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip")
-          Expand-Archive -Path ".\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip" -DestinationPath ".\udemy-py\dependencies" -Force
-          Remove-Item -Path ".\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip"
-          (New-Object System.Net.WebClient).DownloadFile("https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.2.1-beta/N_m3u8DL-RE_Beta_win-x64_20240828.zip", "C:\N_m3u8DL-RE_Beta_win-x64_20240828.zip")
-          Expand-Archive -Path ".\N_m3u8DL-RE_Beta_win-x64_20240828.zip" -DestinationPath ".\udemy-py\dependencies" -Force
-          Rename-Item -Path ".\udemy-py\dependencies\N_m3u8DL-RE_Beta_win-x64" -NewName "n_m3u8_dl-re"
-          Remove-Item -Path ".\N_m3u8DL-RE_Beta_win-x64_20240828.zip"
+          python --version
 
+      - name: Set up udm
+        run: |
+          # Change to the C:\ directory
+          cd C:\
+
+          # Clone the udm repository
+          git clone https://github.com/hoangduyhieu/udm.git
+
+          # Create the 'dependencies' directory
+          New-Item -ItemType Directory -Path ".\udm\dependencies"
+
+          # Download necessary tools: ffmpeg, N_m3u8DL-RE, and Bento4
+          (New-Object System.Net.WebClient).DownloadFile("https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip", "$PWD\ffmpeg.zip")
+          (New-Object System.Net.WebClient).DownloadFile("https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.3.0-beta/N_m3u8DL-RE_v0.3.0-beta_win-x64_20241203.zip", "$PWD\N_m3u8DL-RE.zip")
+          (New-Object System.Net.WebClient).DownloadFile("https://www.bok.net/Bento4/binaries/Bento4-SDK-1-6-0-641.x86_64-microsoft-win32.zip", "$PWD\bento4.zip")
+
+          # Extract and delete each archive in the list
+          $files = @("ffmpeg.zip", "N_m3u8DL-RE.zip", "bento4.zip")
+          foreach ($file in $files) {
+              Expand-Archive -Path ".\$file" -DestinationPath ".\udm\dependencies" -Force
+              Remove-Item -Path ".\$file"
+          }
+
+          # Install required Python packages for udm
+          py -m pip install -r .\udm\requirements.txt --no-warn-script-location
+
+      - name: Set Env and Download
+        run: |
+          # Change to the C:\udm directory
+          cd C:\udm
+
+          # Add dependencies to the system PATH
           $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-          $path += ";C:\udemy-py\dependencies"
-          $path += ";C:\udemy-py\dependencies\ffmpeg-master-latest-win64-gpl\bin"  
-          $path += ";C:\udemy-py\dependencies\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32\bin"        
-          $path += ";C:\udemy-py\dependencies\n_m3u8_dl-re"
+          $path += ";$PWD\dependencies\ffmpeg-master-latest-win64-gpl\bin"
+          $path += ";$PWD\dependencies"
+          $path += ";$PWD\dependencies\Bento4-SDK-1-6-0-641.x86_64-microsoft-win32\bin"
           [System.Environment]::SetEnvironmentVariable("Path", $path, "Machine")
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-          $requirements = @"
-          certifi==2024.8.30
-          charset-normalizer==3.4.0
-          colorama==0.4.6
-          idna==3.10
-          iso8601==2.1.0
-          m3u8==6.0.0
-          markdown-it-py==3.0.0
-          mdurl==0.1.2
-          pathvalidate==3.2.1
-          pycryptodome==3.21.0
-          Pygments==2.18.0
-          requests==2.32.3
-          rich==13.9.2
-          tqdm==4.66.5
-          urllib3==2.2.3
-          webvtt-py==0.5.1
-          "@
-          $requirements | Out-File -FilePath ".\udemy-py\requirements2.txt"
-          py -m pip install -r ".\udemy-py\requirements2.txt"
 
-      - name: Download and Extract ngrok
+          # Set Python encoding to UTF-8
+          $Env:PYTHONIOENCODING = "utf-8"
+
+          # # Option for download txt file
+          # Invoke-WebRequest -Uri "https://drive.google.com/uc?id=1i9eU0OVtYd_2lZRx3w-u6dZbp66kobyF" -OutFile "cookies.txt"
+
+          # Option for download docs file
+          $url = "https://docs.google.com/document/d/1vESIymKDTwYMlsvAGCaelc7e-qM1ZUUPG5a_D7RNQTI/export?format=txt"
+          $outputPath = "C:\udm\cookies.txt"
+
+          # Download the file as a string 
+          $response = Invoke-WebRequest -Uri $url -UseBasicParsing
+          $content = $response.Content
+
+          # Remove BOM if it exists (character \uFEFF at the beginning of the string)
+          if ($content.StartsWith([char]0xFEFF)) {
+          $content = $content.Substring(1)
+          }
+
+          # Replace 8 SPACE characters with a TAB
+          $content = $content -replace ' {8}', "`t"
+
+          # Save content to a file
+          Set-Content -Path $outputPath -Value $content
+
+          # Download the Udemy course
+          # py main.py --url https://itauchile.udemy.com/course/personal-branding-xay-dung-thuong-hieu-ca-nhan --bearer d1ls890qohB8oeXLwaeH9SCjht1gRndbrJkGQUkg --key 1007d1750dc54cf1a8a19d49302b3506:2ede8a9dcb8cbdbf064fb1bb2ed1b38f --captions en_US,vi_VN --srt --concurrent 8 --chapter 1-5
+
+          #py main.py --url https://www.udemy.com/course/data-management-masterclass-the-complete-course --key 7df28363edd0445fbc4d4628c8b6cfd3:bcf28da24ba22e26f3e66c4c165efabe --cookies cookies.txt --captions en_US,vi_VN --srt --concurrent 8 --chapter 13-18
+      - name: Download and Extract ngrok for creating secure tunnels
         run: |
-          Invoke-WebRequest -Uri 'https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip' -OutFile '.\ngrok.zip'
+          Start-BitsTransfer -Source "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -Destination ".\ngrok.zip"
           Expand-Archive -Path '.\ngrok.zip'
           Remove-Item -Path '.\ngrok.zip'
-
-      - name: Authenticate with provided token
+      
+      - name: Authenticate with ngrok using the provided token
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      # - name: Setup ngrok region
-      #   run: |
-      #     Add-Content -Path "${env:USERPROFILE}\AppData\Local\ngrok\ngrok.yml" -Value "region: us-cal-1"
-
-      # - name: Start tunnel for port 3389
-      #   run: .\ngrok\ngrok.exe tcp 3389
-
-      - name: Start an ngrok tunnel for port 3389
-        run: .\ngrok\ngrok.exe tcp --region=us-cal-1 3389
+      
+      - name: Create multiple user accounts for RDP access
+        run: |
+          # Create secure password for accounts
+          $Password = ConvertTo-SecureString -String "P@ssw0rd!" -AsPlainText -Force
+          
+          # Create 10 user accounts
+          for ($i = 1; $i -le 10; $i++) {
+              # Create or update account
+              New-LocalUser -Name "runner$i" -Password $Password -FullName "Runner User $i" -Description "Additional RDP user" -AccountNeverExpires -ErrorAction SilentlyContinue
+              
+              # Add account to Remote Desktop Users group
+              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "runner$i" -ErrorAction SilentlyContinue
+          }
+      
+      - name: Start ngrok in background and get tunnel info
+        run: |
+          # Start ngrok in background to create a TCP tunnel to port 3389 (RDP)
+          Start-Process -FilePath ".\ngrok\ngrok.exe" -ArgumentList "tcp", "--region=us-cal-1", "3389" -NoNewWindow
+   
+          # Query the ngrok API to retrieve the public URL for RDP connection
+          $ngrokAPI = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels
+          $publicUrl = $ngrokAPI.tunnels[0].public_url
+          
+          # Display connection information for RDP access
+          Write-Host "=============================================="
+          Write-Host "RDP Connection Information:"
+          Write-Host "NGROK Public URL: $publicUrl"
+          Write-Host "Primary Username: ${{ env.RDP_USERNAME }}"
+          Write-Host "Primary Password: ${{ env.RDP_PASSWORD }}"
+          Write-Host ""
+          Write-Host "Additional users: runner1 through runner10"
+          Write-Host "Password for all accounts: P@ssw0rd!"
+          Write-Host "=============================================="
+          
+          # Keep the GitHub Actions runner active to allow RDP connections
+          Write-Host "Runner will remain active for 6 hours"
+          Start-Sleep -Seconds 21600  # Run for 6 hours or adjust as needed
