@@ -16,7 +16,6 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
           Set-LocalUser -Name "${{ env.RDP_USERNAME }}" -Password (ConvertTo-SecureString -AsPlainText "${{ env.RDP_PASSWORD }}" -Force)
-
       - name: Set up udm
         run: |
           # Change to the C:\ directory
@@ -96,21 +95,7 @@ jobs:
         run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-      
-      - name: Create multiple user accounts for RDP access
-        run: |
-          # Create secure password for accounts
-          $Password = ConvertTo-SecureString -String "P@ssw0rd!" -AsPlainText -Force
-          
-          # Create 10 user accounts
-          for ($i = 1; $i -le 10; $i++) {
-              # Create or update account
-              New-LocalUser -Name "runner$i" -Password $Password -FullName "Runner User $i" -Description "Additional RDP user" -AccountNeverExpires -ErrorAction SilentlyContinue
-              
-              # Add account to Remote Desktop Users group
-              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "runner$i" -ErrorAction SilentlyContinue
-          }
-      
+    
       - name: Start ngrok in background and get tunnel info
         run: |
           # Start ngrok in background to create a TCP tunnel to port 3389 (RDP)
