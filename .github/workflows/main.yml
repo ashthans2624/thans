@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      RDP_USERNAME: ${{ secrets.RDP_USERNAME || 'runneradmin' }}
+      RDP_PASSWORD: ${{ secrets.RDP_PASSWORD || 'P@ssw0rd!' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,6 +19,7 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
           Set-LocalUser -Name "${{ env.RDP_USERNAME }}" -Password (ConvertTo-SecureString -AsPlainText "${{ env.RDP_PASSWORD }}" -Force)
+          
       - name: Set up udm
         run: |
           # Change to the C:\ directory
