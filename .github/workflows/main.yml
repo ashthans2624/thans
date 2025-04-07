@@ -30,7 +30,7 @@ jobs:
         run: |
           cd C:\
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-          https://github.com/hoangduyhieu/udemix.git
+          git clone https://github.com/hoangduyhieu/udemix.git
           New-Item -Path ".\udemy-py\cookies.txt" -ItemType File -Force
           New-Item -ItemType Directory -Path ".\udemy-py\dependencies" -Force
           (New-Object System.Net.WebClient).DownloadFile("https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip", "C:\ffmpeg-master-latest-win64-gpl.zip")
