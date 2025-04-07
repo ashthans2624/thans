@@ -10,17 +10,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Change Python version
+      - name: Enable TS
         run: |
-          $path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-          $path = $path -replace ";C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\Scripts", ""
-          $path = $path -replace ";C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64", ""
-          $path += ";${{ runner.tool_cache }}\Python\3.12.8\x64\Scripts;${{ runner.tool_cache }}\Python\3.12.8\x64"
-          [System.Environment]::SetEnvironmentVariable("Path", $path, "Machine")
-
-          cd C:\
-          python --version
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+          Set-LocalUser -Name "${{ env.RDP_USERNAME }}" -Password (ConvertTo-SecureString -AsPlainText "${{ env.RDP_PASSWORD }}" -Force)
 
       - name: Set up udm
         run: |
@@ -89,7 +84,8 @@ jobs:
           # Download the Udemy course
           # py main.py --url https://itauchile.udemy.com/course/personal-branding-xay-dung-thuong-hieu-ca-nhan --bearer d1ls890qohB8oeXLwaeH9SCjht1gRndbrJkGQUkg --key 1007d1750dc54cf1a8a19d49302b3506:2ede8a9dcb8cbdbf064fb1bb2ed1b38f --captions en_US,vi_VN --srt --concurrent 8 --chapter 1-5
 
-          #py main.py --url https://www.udemy.com/course/data-management-masterclass-the-complete-course --key 7df28363edd0445fbc4d4628c8b6cfd3:bcf28da24ba22e26f3e66c4c165efabe --cookies cookies.txt --captions en_US,vi_VN --srt --concurrent 8 --chapter 13-18
+          # py main.py --url https://www.udemy.com/course/data-management-masterclass-the-complete-course --key 7df28363edd0445fbc4d4628c8b6cfd3:bcf28da24ba22e26f3e66c4c165efabe --cookies cookies.txt --captions en_US,vi_VN --srt --concurrent 8 --chapter 13-18
+
       - name: Download and Extract ngrok for creating secure tunnels
         run: |
           Start-BitsTransfer -Source "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -Destination ".\ngrok.zip"
@@ -130,9 +126,6 @@ jobs:
           Write-Host "NGROK Public URL: $publicUrl"
           Write-Host "Primary Username: ${{ env.RDP_USERNAME }}"
           Write-Host "Primary Password: ${{ env.RDP_PASSWORD }}"
-          Write-Host ""
-          Write-Host "Additional users: runner1 through runner10"
-          Write-Host "Password for all accounts: P@ssw0rd!"
           Write-Host "=============================================="
           
           # Keep the GitHub Actions runner active to allow RDP connections
